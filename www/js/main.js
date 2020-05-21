@@ -93,6 +93,7 @@ var service = {
 
 function write_welcome() {
   state.workspace.active = true;
+  var res = lib_html.open_('section id="aquarium"');
   var res = lib_html.open_('section id="intro"');
   res += lib_html.open_('section id="intro_title"');
   res += 'Welcome to Aquatic!';
@@ -109,7 +110,8 @@ function write_welcome() {
   res += '<p>Enjoy - smooth listening awaits!</p>';
   res += lib_html.close('section');
   res += lib_html.close('section');
-  lib_html.write('workspace',res,function () {},fade_in_s);
+  res += lib_html.close('section');
+  lib_html.write('workspace',res,function () {});
 }
 
 

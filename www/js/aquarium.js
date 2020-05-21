@@ -71,6 +71,8 @@ function launch_aquarium() {
     return;
   }
 
+
+
   ++state.aquarium.iter;
   var iter_id = state.aquarium.iter;
 
@@ -793,6 +795,8 @@ function do_aqua_iter() {
 function draw_aqua() {
   state.aquarium.elem = document.getElementById('aquarium');
   lib_base.jssert(state.aquarium.elem);
+
+  state.aquarium.elem.innerHTML = "";
 
   // Build static images if not wlaready
   if (state.aquarium.objects.images.length==0) {
