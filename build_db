@@ -1,0 +1,212 @@
+#!/bin/bash
+
+#   Project: https://github.com/realsporkman/aquatic-mp
+#   File:    /build_db
+#
+#   Copyright 2020 John R. Chase
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+
+function print_usage_short {
+  echo
+  echo "Usage:"
+  echo
+  echo "    build_db [-h] [-m <path_to_media_library>]"
+  echo
+}
+
+function print_usage_full {
+  echo
+  echo "Welcome to the Aquatic Media Database Builder!"
+  echo
+  echo "This utility sets the symbolic link to your media library and builds the"
+  echo "database used by the Aquatic Media Player. Specify the path to your media"
+  echo "library using the '-m <path>' argument. If the \"media\" symlink already"
+  echo "exists and is valid, then the '-m <path>' argument is optional."
+  echo
+  echo "The media must be organized into album directories, where the name of each"
+  echo "directory should contain the description of the album. Within each album"
+  echo "directory should be the individual songs and/or videos. To include cover"
+  echo "art, place the cover art image in the album directory with the base filename"
+  echo "of \"cover\" or \"folder\" (ex: \"cover.jpg\", \"folder.png\", etc), and for"
+  echo "best results use square-shaped images of at least 300px width & height."
+  echo
+  echo "For example, the media library folder may look like this:"
+  echo
+  echo "    media/"
+  echo "        \"Joe Singer - Greatest Hits\"/"
+  echo "            \"01 - You're my gal.mp3\"/"
+  echo "            \"02 - My old pickup truck.mp3\"/"
+  echo "            \"cover.jpg\""
+  echo "        \"The Flutes - Our Vids\"/"
+  echo "            \"Watch me blow.mp4\"/"
+  echo "            \"Breakdance and woodwind.mov\"/"
+  echo "            \"cover.png\""
+  echo
+  echo "Albums organized under multiple directory hierarchies is supported:"
+  echo
+  echo "    media/"
+  echo "        \"Maudlin Music\"/"
+  echo "            \"Joe Singer - Greatest Hits\"/"
+  echo "                \"01 - You're my gal.mp3\"/"
+  echo "                \"02 - My old pickup.mp3\"/"
+  echo "                \"cover.jpg\""
+  echo "        \"Wind-instrument Videos\"/"
+  echo "            \"The Flutes - Our Vids\"/"
+  echo "                \"Watch me blow.mp4\"/"
+  echo "                \"Breakdance and woodwind.mov\"/"
+  echo "                \"cover.png\""
+  echo
+  echo "although the hierarchy won't be presented in the player, rather the album"
+  echo "directory names will be alphabetically sorted and grouped in the right-hand"
+  echo "margin."
+  echo
+  echo "Note that traversing the media library and reading the song metadata can"
+  echo "be time consuming (around 1 minute per hundred albums)."
+  print_usage_short
+}
+
+function errmsg0 {
+  echo "Error: $1. Aborting."
+}
+
+function errmsg {
+  errmsg0 "$1"
+  exit 1
+}
+
+function realpath {
+  if [ -e "$1" ]; then
+    echo -n "$(cd $(dirname "$1"); pwd)";
+  else
+    errmsg "Path \"$1\" does not exist"
+  fi
+}
+
+function realpathname {
+  echo -n "$(realpath "$1")/$(basename "$1")";
+}
+
+#
+# Check system tools
+#
+
+function check_tool {
+  if [ -z "`which $1`" ]; then
+    errmsg "Missing command-line tool \"$1\" - please make sure \"$1\" is installed and can be found from your PATH environment setting"
+  fi
+}
+
+check_tool nodejs
+check_tool ffprobe
+check_tool identify
+
+#
+# Check installation directories
+#
+
+DIR_ROOT="`realpath "$0"`"
+DIR_ADS="${DIR_ROOT}/ads"
+DIR_JS="${DIR_ROOT}/js"
+DIR_MEDIA="${DIR_ROOT}/media"
+DIR_WWW="${DIR_ROOT}/www"
+
+
+if [ -e "$DIR_MEDIA" ] && [ ! -h "$DIR_MEDIA" ]; then
+  errmsg "Problem with installation: media path \"$DIR_MEDIA\" must be a symbolic link"
+fi
+
+if [ -d "$DIR_MEDIA" ]; then
+  HAS_MEDIA=1
+else
+  HAS_MEDIA=0
+fi
+
+function check_install_dir {
+  if [ ! -e "$1" ]; then
+     errmsg "Problem with installation: missing \"$1\" directory"
+  fi
+}
+
+check_install_dir "$DIR_ADS"
+check_install_dir "$DIR_JS"
+check_install_dir "$DIR_WWW"
+
+#
+# Get command-line arguments
+#
+
+DIR_MEDIA_NEW=""
+
+while [ -n "$1" ]; do
+  case "$1" in
+    -h) print_usage_full
+        exit 0
+        ;;
+    -m)	DIR_MEDIA_NEW="$(realpathname "$2")"
+        shift
+        ;;
+    *)  errmsg0 "Argument \"$1\" not recognized"
+        print_usage_short
+        exit 2
+        ;;
+  esac
+  shift
+done
+
+if [ -z "$DIR_MEDIA_NEW" ]; then
+  if [ "$HAS_MEDIA" -ne 1 ]; then
+    print_usage_full
+    echo "Please specify the path to your media library using the '-m' argument."
+    echo
+    exit 2
+  fi
+else
+  if [ ! -d "$DIR_MEDIA_NEW" ]; then
+    errmsg0 "Path specified in '-m' argument must be a directory"
+    print_usage_short
+    exit 3
+  fi
+fi
+
+#
+# Proceed with update
+#
+
+echo
+echo "Building database - this may take several minutes..."
+echo
+
+function chkres ()
+{
+  if [ $? -ne 0 ]; then
+    errmsg "$1"
+  fi
+}
+
+if [ ! -z "$DIR_MEDIA_NEW" ]; then
+  # Update symlink to media library
+  rm "$DIR_MEDIA" > /dev/null 2>&1
+  ln -s "$DIR_MEDIA_NEW" "$DIR_MEDIA"
+  chkres "Problem creating symbolic link \"$DIR_MEDIA\" - check permisions on \"$DIR_ROOT\" directory"
+fi
+
+# Build db
+nodejs "${DIR_JS}"/build_db.js "$DIR_ROOT"
+chkres "Problem building ads database"
+
+echo "...Done!"
+echo
+
+exit 0
