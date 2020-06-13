@@ -101,7 +101,7 @@ function write_welcome() {
   res += lib_html.open_('section id="intro_body"');
   res += '<p>To get started, click on an album name in the right-hand panel.&nbsp;&nbsp;&nbsp;&nbsp;----&gt;</p><br>';
   res += '<p>Once the album detail view appears here, you can click the "+" buttons to add individual songs or videos to the playlist, or you can';
-  res += 'or you can click the "+++" button to add them all at once.</p><br>';
+  res += 'click the "+++" button to add them all at once.</p><br>';
   res += '<p>&lt;----&nbsp;&nbsp;&nbsp;&nbsp;The playlist is in the left-hand panel. To start playing a song or video in the playlist, click on its title.</p><br>';
   res += '<p>To expand or retract a video, click on the triangular button in the lower-left corner.</p><br>';
   res += '<p>You can enjoy a relaxing aquarium view by clicking the "x" button in the album detail view in this section. ';
