@@ -17,7 +17,7 @@ Once the database is built using the "aquatic-mp-master/build_db" script, launch
 
 For best results we recommend using the Chrome web browser launched in "app" mode:
 
-  google-chrome --app="file://&lt;...path to install...&gt;/aquatic-mp-master/current/www/index.html"
+  google-chrome --app="file://&lt;...path to install...&gt;/aquatic-mp-master/www/index.html"
 
 Be sure to check out the built-in aquarium!
 
